@@ -16,3 +16,4 @@ func GetMe(c *fiber.Ctx) error {
 		},
 	})
 }
+

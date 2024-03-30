@@ -13,7 +13,7 @@ type User struct {
 	Name     string  `gorm:"type:varchar(100);not null"`
 	Email    string  `gorm:"type:varchar(100);unique;not null"`
 	Password string  `gorm:"type:varchar(100);not null"`
-	Role     *string `gorm:"type:varchar(50);default:'user';not null"`
+	Role     *string `gorm:"type:varchar(50);default:'Admin';not null"`
 	Provider *string `gorm:"type:varchar(50);default:'local';not null"`
 	Photo    *string `gorm:"not null;default:'default.png'"`
 	Verified *bool   `gorm:"not null;default:false"`
@@ -23,6 +23,19 @@ type User struct {
 	PasswordResetAt    time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
 	CreatedAt          time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt          time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
+	Task			   []Task    `gorm:"foreignKey:ID;references:ID"`
+
+}
+
+type Task struct {
+    ID       string  `gorm:"type:string;primary_key"`
+    Title       string    `gorm:"type:varchar(255);not null"`
+    Description string    `gorm:"type:text"` // User ID of the assigned user
+    Status      string    `gorm:"type:varchar(50);not null"` // Status: To Do, In Progress, Completed
+    Deadline    time.Time `gorm:"type:datetime"`
+    CreatedAt   time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
+    UpdatedAt   time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
+   
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {

@@ -83,6 +83,62 @@ func SignUpUser(c *fiber.Ctx) error {
 }
 
 
+func ManagerRegistration(c *fiber.Ctx) error {
+	var payload models.Task
+
+	// Parse request body into Task struct
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+	}
+
+	// Validate the input payload
+	errors := models.ValidateStruct(payload)
+	if errors != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "errors": errors})
+	}
+
+	// Create a demo task
+	demoTask := models.Task{
+		Title:       payload.Title,
+		Description: payload.Description,
+		 // Assign the task to the Manager (User ID: 1)
+		Status:      payload.Status,                          // Set initial status as "To Do"
+		Deadline:    time.Now().AddDate(0, 0, 7),             // Example deadline (7 days from now)
+	}
+
+	// Call the function to create the task
+	result := initializers.DB.Create(&demoTask)
+	if result.Error != nil {
+		// Handle error
+		return result.Error
+	}
+
+	// Return success message
+	return c.SendString("Demo task assigned to the Manager successfully!")
+}
+
+
+
+func GetUserTasks(c *fiber.Ctx) error {
+	// Extract user ID from the request query parameter
+	userID := c.Params("id")
+
+	// Fetch user from the database
+	var user models.User
+	if err := initializers.DB.Where("id = ?", userID).Preload("Tasks").First(&user).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "User not found"})
+	}
+
+	// Return user's information along with tasks
+	return c.JSON(fiber.Map{"status": "success", "data": user})
+}
+
+
+ func UserRegistration(c *fiber.Ctx) error {
+	return c.SendString("Hello, World!")
+ }
+
+
 
 func VerifyEmail(c *fiber.Ctx) error {
 	code := c.Params("verificationCode")
@@ -110,6 +166,9 @@ func VerifyEmail(c *fiber.Ctx) error {
 
 	return nil
 }
+
+
+
 
 
 func ForgotPassword(c *fiber.Ctx) error {

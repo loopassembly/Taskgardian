@@ -14,6 +14,8 @@ func SetupAuthRoutes(router fiber.Router) {
 	router.Get("/verifyemail/:verificationCode", controllers.VerifyEmail)
 	router.Post("/forgotpassword", controllers.ForgotPassword)
 	router.Patch("/resetpassword/:resetToken",controllers.ResetPassword)
+	router.Post("/task",controllers.ManagerRegistration)
+	router.Get("/getinfo/:id",controllers.GetUserTasks)
 	// router.Get("/sessions/oauth/google", controllers.GoogleOAuth)
 	// router.Get("/sessions/oauth/github", controllers.GitHubOAuth)
 }

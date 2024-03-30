@@ -25,7 +25,7 @@ func ConnectDB(config *Config) {
     }
 
     log.Println("Running Migrations")// status
-    err = DB.AutoMigrate(&models.User{})
+    err = DB.AutoMigrate(&models.User{}, &models.Task{})
     if err != nil {
         log.Fatal("Migration Failed:  \n", err.Error())
         os.Exit(1)
