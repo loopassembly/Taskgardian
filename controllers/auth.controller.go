@@ -9,13 +9,14 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 	"github.com/thanhpk/randstr"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func SignUpUser(c *fiber.Ctx) error {
+func AdminSignIn(c *fiber.Ctx) error {
 	var payload *models.SignUpInput
 
 	if err := c.BodyParser(&payload); err != nil {
@@ -44,6 +45,7 @@ func SignUpUser(c *fiber.Ctx) error {
 		Email:    strings.ToLower(payload.Email),
 		Password: string(hashedPassword),
 		Photo:    &payload.Photo,
+		Role:     payload.Role,
 	}
 
 	result := initializers.DB.Create(&newUser)
@@ -68,7 +70,7 @@ func SignUpUser(c *fiber.Ctx) error {
 	}
 
 	emailData := utils.EmailData{
-		URL:       config.ClientOrigin + "api/auth/verifyemail/" + code,
+		URL: config.ClientOrigin + "api/auth/verifyemail/" + code,
 		// URL:       "192.168.64.202:3000/api/auth/verifyemail/" + code,
 		FirstName: firstName,
 		Subject:   "Your account verification code",
@@ -82,46 +84,20 @@ func SignUpUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": "success", "message": message})
 }
 
+func GetUserTasks(c *fiber.Ctx) error {
+	// Extract user ID from the request query parameter
+	var payload *models.TaskInput
+	userID := c.Params("id")
 
-func ManagerRegistration(c *fiber.Ctx) error {
-	var payload models.Task
-
-	// Parse request body into Task struct
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
 
-	// Validate the input payload
 	errors := models.ValidateStruct(payload)
 	if errors != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "errors": errors})
+
 	}
-
-	// Create a demo task
-	demoTask := models.Task{
-		Title:       payload.Title,
-		Description: payload.Description,
-		 // Assign the task to the Manager (User ID: 1)
-		Status:      payload.Status,                          // Set initial status as "To Do"
-		Deadline:    time.Now().AddDate(0, 0, 7),             // Example deadline (7 days from now)
-	}
-
-	// Call the function to create the task
-	result := initializers.DB.Create(&demoTask)
-	if result.Error != nil {
-		// Handle error
-		return result.Error
-	}
-
-	// Return success message
-	return c.SendString("Demo task assigned to the Manager successfully!")
-}
-
-
-
-func GetUserTasks(c *fiber.Ctx) error {
-	// Extract user ID from the request query parameter
-	userID := c.Params("id")
 
 	// Fetch user from the database
 	var user models.User
@@ -133,12 +109,9 @@ func GetUserTasks(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"status": "success", "data": user})
 }
 
-
- func UserRegistration(c *fiber.Ctx) error {
+func UserRegistration(c *fiber.Ctx) error {
 	return c.SendString("Hello, World!")
- }
-
-
+}
 
 func VerifyEmail(c *fiber.Ctx) error {
 	code := c.Params("verificationCode")
@@ -166,10 +139,6 @@ func VerifyEmail(c *fiber.Ctx) error {
 
 	return nil
 }
-
-
-
-
 
 func ForgotPassword(c *fiber.Ctx) error {
 	var payload *models.ForgotPasswordInput
@@ -252,16 +221,13 @@ func ResetPassword(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(fiber.Map{"status": "success", "message": "Password data updated successfully"})
 }
 
-
-
 func renderConfirmationTemplate(c *fiber.Ctx) error {
-	
 
 	// Render the template and send the output to the client
 	return c.Render("index", fiber.Map{
 		"Title": "Hello, World!",
 	})
-	
+
 }
 
 func SignInUser(c *fiber.Ctx) error {
@@ -331,4 +297,3 @@ func LogoutUser(c *fiber.Ctx) error {
 	})
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success"})
 }
-

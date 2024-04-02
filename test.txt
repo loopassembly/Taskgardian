@@ -1,3 +1,32 @@
+hey i am making this in golang fiber with gorm as orm 
+1. TaskGuardian
+Description:
+Role-Based Task Management System API
+Build a backend system for a task management tool where users have different
+roles. Admins can do everything, managers can assign tasks, and regular users can
+complete tasks assigned to them. Make sure users can only access features based
+on their role.
+Roles:
+Admin: Admin users have full access to all functionalities, including creating,
+updating, deleting tasks, as well as managing users and their roles.
+Manager: Manager users have access to creating, updating, and deleting tasks, as
+well as assigning tasks to other users. They cannot manage users or roles.
+Regular User: Regular users can view, create, update, and delete tasks assigned to
+them. They cannot perform administrative tasks or assign tasks to others.
+Technologies:
+● Choose a backend framework like Express/Fastify (Node.js),
+FastAPI/Flask(Python), Gin/Fibre (Golang) or Axum/Rocket (Rust)
+● Database: MongoDB or PostgreSQL.
+Tasks:
+1. Implement role-based authentication to restrict access to API endpoints
+based on user roles.
+2. Design and implement RESTful APIs for CRUD operations on tasks.
+3. Create endpoints for assigning tasks to users and managing task statuses
+4. Implement error handling for unauthorized access attempts and invalid
+requests.
+5. (Optional) Dockerize the application.
+
+help me to build this here is my model update this where required
 package models
 
 import (
@@ -13,7 +42,7 @@ type User struct {
 	Name     string  `gorm:"type:varchar(100);not null"`
 	Email    string  `gorm:"type:varchar(100);unique;not null"`
 	Password string  `gorm:"type:varchar(100);not null"`
-	Role     string  `gorm:"type:varchar(50);not null"`
+	Role     *string `gorm:"type:varchar(50);default:'Admin';not null"`
 	Provider *string `gorm:"type:varchar(50);default:'local';not null"`
 	Photo    *string `gorm:"not null;default:'default.png'"`
 	Verified *bool   `gorm:"not null;default:false"`
@@ -23,32 +52,19 @@ type User struct {
 	PasswordResetAt    time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
 	CreatedAt          time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt          time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
-	Task               []Task
+	Task			   []Task    `gorm:"foreignKey:ID;references:ID"`
+
 }
 
 type Task struct {
-	ID          string    `gorm:"type:string;primary_key"`
-	UserID      string    `gorm:"type:string;not null"`
-	Title       string    `gorm:"type:varchar(255);not null"`
-	Description string    `gorm:"type:text"`                 // User ID of the assigned user
-	Status      string    `gorm:"type:varchar(50);not null"` // Status: To Do, In Progress, Completed
-	Deadline    time.Time `gorm:"type:datetime"`
-	CreatedAt   time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt   time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
-}
-
-func (u *Task) BeforeCreate(tx *gorm.DB) error {
-	// Generate a new UUID
-	uuid, err := uuid.NewUUID()
-	if err != nil {
-		return err
-	}
-
-	// Set the UUID as the primary key
-	// u.ID = uuid.String()
-	u.ID = uuid.String()
-
-	return nil
+    ID       string  `gorm:"type:string;primary_key"`
+    Title       string    `gorm:"type:varchar(255);not null"`
+    Description string    `gorm:"type:text"` // User ID of the assigned user
+    Status      string    `gorm:"type:varchar(50);not null"` // Status: To Do, In Progress, Completed
+    Deadline    time.Time `gorm:"type:datetime"`
+    CreatedAt   time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
+    UpdatedAt   time.Time `gorm:"type:datetime;not null;default:CURRENT_TIMESTAMP"`
+   
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -71,19 +87,11 @@ type SignUpInput struct {
 	Password        string `json:"password" validate:"required,min=8"`
 	PasswordConfirm string `json:"passwordConfirm" validate:"required,min=8"`
 	Photo           string `json:"photo"`
-	Role            string `json:"role" validate:"required"`
 }
 
 type SignInInput struct {
-	Email    string `json:"email" validate:"required"`
-	Password string `json:"password" validate:"required"`
-}
-
-type TaskInput struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description"`
-	Status      string `json:"status" validate:"required"`
-	// Deadline    time.Time `json:"deadline" validate:"required"`
+	Email    string `json:"email"  validate:"required"`
+	Password string `json:"password"  validate:"required"`
 }
 
 // user response
@@ -98,33 +106,6 @@ type UserResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type taskResponse struct {
-	ID          uuid.UUID `json:"id,omitempty"`
-	UserID      uuid.UUID `json:"user_id,omitempty"`
-	Title       string    `json:"title,omitempty"`
-	Description string    `json:"description,omitempty"`
-	Status      string    `json:"status,omitempty"`
-	Deadline    time.Time `json:"deadline,omitempty"`
-	CreatedAt   time.Time `json:"created_at,omitempty"`
-	UpdatedAt   time.Time `json:"updated_at,omitempty"`
-}
-
-// filter task
-func FilterTaskRecord(task *Task) taskResponse {
-	id := task.ID
-	userID := task.UserID
-	return taskResponse{
-		ID:          uuid.MustParse(id),
-		UserID:      uuid.MustParse(userID),
-		Title:       task.Title,
-		Description: task.Description,
-		Status:      task.Status,
-		Deadline:    task.Deadline,
-		CreatedAt:   task.CreatedAt,
-		UpdatedAt:   task.UpdatedAt,
-	}
-}
-
 // filter user
 func FilterUserRecord(user *User) UserResponse {
 	id := user.ID
@@ -132,7 +113,7 @@ func FilterUserRecord(user *User) UserResponse {
 		ID:        uuid.MustParse(id),
 		Name:      user.Name,
 		Email:     user.Email,
-		Role:      user.Role,
+		Role:      *user.Role,
 		Photo:     *user.Photo,
 		Provider:  *user.Provider,
 		CreatedAt: user.CreatedAt,
